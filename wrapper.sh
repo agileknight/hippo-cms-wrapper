@@ -1,52 +1,39 @@
 #!/bin/sh
 
 echo "Start running wrapper script"
+
 set -e
+# TODO remove later
 set -x
 
-runSqlQuery() {
-	# TODO parameterize
-	mysql --protocol=tcp --host=localhost --port=3306 -u hippo_test -p"$HIPPO_CONTENTSTORE_PASSWORD" "$@"
+requestImport() {
+	touch /control/REQUEST_IMPORT
 }
 
-getJournalId() {
-	echo "root-$(hostname)"
+waitForImportComplete() {
+	while [ ! -f /control/IMPORT_COMPLETE ]; do
+		sleep 5
+	done
+	echo "Import complete"
 }
 
-getLocalRepositoryRevision() {
-	runSqlQuery hippo -e "select REVISION_ID from REPOSITORY_LOCAL_REVISIONS where JOURNAL_ID='$(getJournalId)'" -s -N
-}
-
-updateLocalRepositoryRevision() {
-	local revisionId="$1"
-	runSqlQuery hippo -e "insert into REPOSITORY_LOCAL_REVISIONS (JOURNAL_ID, REVISION_ID) values ('$(getJournalId)', '$revisionId')"
-}
-
-restoreFromBackup() {
-	# todo find newest backup or skip
-	# todo extract repository revision from filename
-	local backupTgzGsPath="gs://int-ecom-1012-junior-staging-repository-backups/21688296-1523370560.tar.gz"
-	local backupRepoRevision="21688296"
-	echo "Restoring local repository from backup with revision $backupRepoRevision"
-
-	gsutil cp "$backupTgzGsPath" /usr/local/tomcat/backup.tar.gz
-	(cd /usr/local/tomcat && tar xvzf backup.tar.gz)
-	rm -f /usr/local/tomcat/backup.tar.gz
-	updateLocalRepositoryRevision "21688296"
-
-	echo "Done restoring local repository from backup"
-}
-
-restoreIfNecessary() {
-	local curRevision="$(getLocalRepositoryRevision)"
-	if [ "$curRevision" = "" ] ; then
-		restoreFromBackup
+requestImportIfNecessary() {
+	if [ -z "$(ls -A /usr/local/tomcat/repository)" ]; then
+		echo "Requesting import of lucene index"
+		requestImport
 	fi
 }
 
-restoreIfNecessary
+waitForImportIfNecessary() {
+	if [ -f /control/REQUEST_IMPORT ]; then
+		waitForImportComplete
+	fi
+}
 
-set +x
+requestImportIfNecessary
+waitForImportIfNecessary
+rm -f rm /control/IMPORT_COMPLETE
+
 set +e
 
 echo "Finished running wrapper script"
