@@ -5,69 +5,68 @@ echo "Start running wrapper script"
 set -e
 
 requestImport() {
-	echo "Requesting import of lucene index"
-	touch /control/REQUEST_IMPORT
+    echo "Requesting import of lucene index"
+    touch /control/REQUEST_IMPORT
 }
 
 waitForImportComplete() {
-	while [ ! -f /control/IMPORT_COMPLETE ]; do
-		sleep 5
-	done
-	echo "Import complete"
+    while [ ! -f /control/IMPORT_COMPLETE ]; do
+        sleep 5
+    done
+    echo "Import complete"
 }
 
 requestImportIfNecessary() {
-	if [ -z "$(ls -A /usr/local/tomcat/repository)" ]; then
-		requestImport
-	fi
+    if [ -z "$(ls -A /usr/local/tomcat/repository)" ]; then
+        requestImport
+    fi
 }
 
 finishImportIfNecessary() {
-	if [ -f /control/REQUEST_IMPORT ]; then
-		waitForImportComplete
-	fi
-	rm -f /control/IMPORT_COMPLETE
+    if [ -f /control/REQUEST_IMPORT ]; then
+        waitForImportComplete
+    fi
+    rm -f /control/IMPORT_COMPLETE
 }
 
 executeGracefulRestart() {
-	echo "Triggering graceul restart"
-	# main process in docker always has pid 1
-	# send SIGTERM for graceul shutdown
-	# should trigger restart of container, depends on restart policy always
-	kill 1
+    echo "Triggering graceul restart"
+    # main process in docker always has pid 1
+    # send SIGTERM for graceul shutdown
+    # should trigger restart of container, depends on restart policy always
+    kill 1
 }
 
 waitForShutdownRequest() {
-	while [ ! -f /control/REQUEST_SHUTDOWN ] ;
-	do
-		sleep 5
-	done
-	executeGracefulRestart
+    while [ ! -f /control/REQUEST_SHUTDOWN ]; do
+        sleep 5
+    done
+    executeGracefulRestart
 }
 
 requestExport() {
-	echo "Requesting export of lucene index"
-	mv /control/REQUEST_SHUTDOWN /control/REQUEST_EXPORT
+    echo "Requesting export of lucene index"
+    mv /control/REQUEST_SHUTDOWN /control/REQUEST_EXPORT
 }
 
 requestExportIfNecessary() {
-	if [ -f /control/REQUEST_SHUTDOWN ]; then
-		requestExport
-	fi
+    if [ -f /control/REQUEST_SHUTDOWN ]; then
+        requestExport
+    fi
 }
 
 waitForExportComplete() {
-	while [ ! -f /control/EXPORT_COMPLETE ]; do
-		sleep 5
-	done
-	echo "Export complete"
+    while [ ! -f /control/EXPORT_COMPLETE ]; do
+        sleep 5
+    done
+    echo "Export complete"
 }
 
 finishExportIfNecessary() {
-	if [ -f /control/REQUEST_EXPORT ]; then
-		waitForExportComplete
-	fi
-	rm -f /control/EXPORT_COMPLETE
+    if [ -f /control/REQUEST_EXPORT ]; then
+        waitForExportComplete
+    fi
+    rm -f /control/EXPORT_COMPLETE
 }
 
 requestImportIfNecessary
