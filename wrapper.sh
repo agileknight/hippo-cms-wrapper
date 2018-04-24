@@ -75,13 +75,13 @@ requestImportIfNecessary
 # make sure we finish running import even in case of a restart
 finishImportIfNecessary
 
-waitForShutdownRequest &
-
 # this happens after shutdown-triggered restart before service is started again
 # export needs to happen with service stopped to prevent open file handlers and inconsistent state
 requestExportIfNecessary
 
 finishExportIfNecessary
+
+waitForShutdownRequest &
 
 set +e
 
