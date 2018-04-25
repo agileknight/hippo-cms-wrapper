@@ -1,5 +1,10 @@
 #!/bin/sh
 
+if [ "$HIPPO_LUCENE_BACKUP_ENABLED" != "true" ]; then
+    # prevent any side effects for existing setup (feature toggle)
+    exec "$@"
+fi
+
 echo "Start running wrapper script"
 
 set -e
